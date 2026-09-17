@@ -44,6 +44,15 @@ public final class ElytraTextureResolver {
     }
 
     /**
+     * True if any recognised elytra is equipped anywhere (chest or Curios slots). Used by
+     * ElytraLayerMixin to suppress vanilla's flat render even when the elytra isn't in the
+     * chest slot, preventing duplicates when ElytraSlotLayerMixin handles the actual draw.
+     */
+    public static boolean isElytraEquippedAnywhere(LivingEntity entity) {
+        return resolve(entity) != null;
+    }
+
+    /**
      * Returns the entity texture for the elytra the entity is wearing, or null if none of
      * our supported elytras are equipped anywhere.
      */

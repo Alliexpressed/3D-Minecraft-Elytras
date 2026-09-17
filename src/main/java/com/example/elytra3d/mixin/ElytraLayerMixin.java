@@ -41,6 +41,12 @@ public abstract class ElytraLayerMixin {
 
         ResourceLocation texture = ElytraTextureResolver.resolve(entity);
         if (texture == null) {
+            // No recognised elytra in the chest slot. If ElytraSlotLayer is also active (elytra
+            // in a Curios slot), it will handle rendering - cancel here so we don't get a
+            // duplicate vanilla flat render on top of what ElytraSlotLayerMixin draws.
+            if (ElytraTextureResolver.isElytraEquippedAnywhere(entity)) {
+                ci.cancel();
+            }
             return;
         }
 
