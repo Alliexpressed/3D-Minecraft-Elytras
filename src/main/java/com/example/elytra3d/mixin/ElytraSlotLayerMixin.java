@@ -77,8 +77,11 @@ public abstract class ElytraSlotLayerMixin {
                 accessor.elytra3d$getLeftWing(), accessor.elytra3d$getRightWing(),
                 poseStack, consumer, light);
 
-        // Cancel prevents Elytra Slot's own renderToBuffer from running after us,
-        // which was causing the duplicate flat elytra.
+        // Elytra Slot's lambda did pushPose before calling renderToBuffer (which is where we
+        // injected). Cancelling skips its own popPose, leaving the stack unbalanced and
+        // crashing with "Pose stack not empty". We close it ourselves before cancelling.
+        poseStack.popPose();
+
         ci.cancel();
     }
 }
