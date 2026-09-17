@@ -36,16 +36,13 @@ neoForge {
 
 repositories {
     mavenLocal()
-    maven {
-        name = "Sponge"
-        url = uri("https://repo.spongepowered.org/repository/maven-public/")
-    }
 }
 
 dependencies {
-    // Mixin: annotations/AP only at compile time - NeoForge provides Mixin at runtime.
-    compileOnly "org.spongepowered:mixin:${mixin_version}"
-    annotationProcessor "org.spongepowered:mixin:${mixin_version}:processor"
+    // No Mixin dependency or annotation processor here on purpose. NeoForge already provides
+    // Mixin on the compile and runtime classpath, and since 1.20.2 it runs on Mojang's official
+    // mappings - so mixins targeting vanilla classes need no refmap and no obfuscation lookup.
+    // Adding the standalone AP makes it try to resolve SRG mappings that don't exist here.
 
     // 3D Skin Layers: compileOnly - we compile against its public API but never bundle it.
     // It's declared as a required dependency in neoforge.mods.toml instead.
