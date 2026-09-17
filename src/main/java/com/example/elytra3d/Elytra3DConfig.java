@@ -73,7 +73,7 @@ public final class Elytra3DConfig {
         builder.pop();
 
         builder.comment("Per-wing alignment against vanilla's wing model parts.").push("alignment");
-        LEFT  = new Wing(builder, "left",  -3.0D, -1.0D, 2.0D);
+        LEFT  = new Wing(builder, "left",  -4.0D, -1.0D, 2.0D);
         RIGHT = new Wing(builder, "right",  3.0D, -1.0D, 2.0D);
         builder.pop();
 

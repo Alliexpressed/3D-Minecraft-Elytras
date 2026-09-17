@@ -2,6 +2,7 @@ package com.example.elytra3d.mixin;
 
 import com.example.elytra3d.Elytra3DConfig;
 import com.example.elytra3d.render.ElytraMeshCache;
+import com.example.elytra3d.render.ElytraTextureResolver;
 import com.example.elytra3d.render.ElytraWingRenderer;
 import com.illusivesoulworks.elytraslot.client.ElytraRenderResult;
 import com.illusivesoulworks.elytraslot.client.ElytraSlotLayer;
@@ -20,24 +21,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces Elytra Slot's flat elytra render with the 3D mesh version.
- *
- * Elytra Slot's outer render() calls getElytraRender().ifPresent(lambda). The lambda:
- *   1. getParentModel().copyPropertiesTo(elytraModel)
- *   2. elytraModel.setupAnim(entity, ...)   <- wings are posed here
- *   3. pushPose / translate
- *   4. elytraModel.renderToBuffer(...)      <- we inject here, before this draw
- *   5. popPose
- *
- * Injecting inside the lambda after setupAnim gives us correctly-posed ModelParts.
- * The exact lambda descriptor from the compiled jar:
- *   (LivingEntity, PoseStack, float x5, MultiBufferSource, int, ElytraRenderResult)V
+ * Same replacement as ElytraLayerMixin, but for Elytra Slot's own render layer, used when
+ * the elytra is worn in a Curios accessory slot.
  */
 @Mixin(ElytraSlotLayer.class)
 public abstract class ElytraSlotLayerMixin {
-
-    private static final ResourceLocation ELYTRA_TEXTURE =
-            ResourceLocation.withDefaultNamespace("textures/entity/elytra.png");
 
     @Shadow
     @Final
@@ -65,23 +53,24 @@ public abstract class ElytraSlotLayerMixin {
             return;
         }
 
-        ElytraMeshCache.Wings wings = ElytraMeshCache.getOrBuild(ELYTRA_TEXTURE);
+        ResourceLocation texture = ElytraTextureResolver.resolve(entity);
+        if (texture == null) {
+            return;
+        }
+
+        ElytraMeshCache.Wings wings = ElytraMeshCache.getOrBuild(texture);
         if (wings == null) {
             return;
         }
 
         ElytraModelAccessor accessor = (ElytraModelAccessor) this.elytraModel;
-        VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(ELYTRA_TEXTURE));
+        VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(texture));
 
         ElytraWingRenderer.render(wings,
                 accessor.elytra3d$getLeftWing(), accessor.elytra3d$getRightWing(),
                 poseStack, consumer, light);
 
-        // Elytra Slot's lambda did pushPose before calling renderToBuffer (which is where we
-        // injected). Cancelling skips its own popPose, leaving the stack unbalanced and
-        // crashing with "Pose stack not empty". We close it ourselves before cancelling.
         poseStack.popPose();
-
         ci.cancel();
     }
 }
