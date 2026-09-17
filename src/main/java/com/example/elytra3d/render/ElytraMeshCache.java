@@ -63,15 +63,20 @@ public final class ElytraMeshCache {
 
             float thickness = Elytra3DConfig.THICKNESS.get().floatValue();
 
-            // create3DMesh(image, texU, texV, width, height, textureWidth, ?, thickness, ?)
-            // The two booleans are, per 3D Skin Layers' own usage, "slim/alex model" style
-            // flags and mirroring; for a plain rectangular region neither applies.
+            // Real parameter order (from 3D Skin Layers' own MeshHelperImplementation):
+            //   create3DMesh(natImage, width, height, depth, textureU, textureV,
+            //                topPivot, rotationOffset, mirror)
+            // Depth is the extrusion thickness in pixels; vanilla's elytra wing box is 1 deep,
+            // so we scale that by the configured thickness. Mirror flips the right wing, the
+            // same way vanilla's ElytraModel draws the right wing mirrored from the same UVs.
+            int depth = Math.max(1, Math.round(thickness));
+
             Mesh left = SkinLayersAPI.getMeshHelper().create3DMesh(
-                    image, WING_TEX_U, WING_TEX_V, WING_WIDTH, WING_HEIGHT, 64,
-                    false, thickness, false);
+                    image, WING_WIDTH, WING_HEIGHT, depth, WING_TEX_U, WING_TEX_V,
+                    false, 0.0F, false);
             Mesh right = SkinLayersAPI.getMeshHelper().create3DMesh(
-                    image, WING_TEX_U, WING_TEX_V, WING_WIDTH, WING_HEIGHT, 64,
-                    false, thickness, true);
+                    image, WING_WIDTH, WING_HEIGHT, depth, WING_TEX_U, WING_TEX_V,
+                    false, 0.0F, true);
 
             Wings wings = new Wings(left, right);
             CACHE.put(texture, wings);

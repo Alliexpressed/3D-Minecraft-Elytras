@@ -23,8 +23,8 @@ public final class Elytra3DConfig {
                 .define("enabled", true);
 
         THICKNESS = builder
-                .comment("How far the elytra is extruded, in pixels. 1.0 matches the thickness",
-                        "3D Skin Layers uses for skin layers. Higher is chunkier.")
+                .comment("How far the elytra is extruded, in pixels (rounded to whole pixels;",
+                        "minimum 1). Vanilla's elytra wing box is 1 deep, so 1.0 matches it.")
                 .defineInRange("thickness", 1.0D, 0.25D, 4.0D);
 
         builder.pop();
