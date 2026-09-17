@@ -32,6 +32,12 @@ public final class ElytraMeshCache {
     private static final int WING_WIDTH = 10;
     private static final int WING_HEIGHT = 20;
 
+    /**
+     * Always on - building the mesh from its top edge is what gives the wings their correct
+     * facing, so it's baked in rather than being a toggle.
+     */
+    private static final boolean TOP_PIVOT = true;
+
     private static final Map<Key, Wings> CACHE = new HashMap<>();
     private static final Set<Key> FAILED = new HashSet<>();
 
@@ -39,7 +45,7 @@ public final class ElytraMeshCache {
     }
 
     /** Everything the built geometry depends on. */
-    private record Key(ResourceLocation texture, int depth, boolean topPivot, boolean mirrorRight) {
+    private record Key(ResourceLocation texture, int depth, boolean mirrorRight) {
     }
 
     /** A built pair of wing meshes. */
@@ -50,7 +56,6 @@ public final class ElytraMeshCache {
         Key key = new Key(
                 texture,
                 Elytra3DConfig.DEPTH.get(),
-                Elytra3DConfig.TOP_PIVOT.get(),
                 Elytra3DConfig.MIRROR_RIGHT.get());
 
         Wings cached = CACHE.get(key);
@@ -72,15 +77,15 @@ public final class ElytraMeshCache {
             //              topPivot, rotationOffset, mirror)
             Mesh left = SkinLayersAPI.getMeshHelper().create3DMesh(
                     image, WING_WIDTH, WING_HEIGHT, key.depth(), WING_TEX_U, WING_TEX_V,
-                    key.topPivot(), 0.0F, false);
+                    TOP_PIVOT, 0.0F, false);
             Mesh right = SkinLayersAPI.getMeshHelper().create3DMesh(
                     image, WING_WIDTH, WING_HEIGHT, key.depth(), WING_TEX_U, WING_TEX_V,
-                    key.topPivot(), 0.0F, key.mirrorRight());
+                    TOP_PIVOT, 0.0F, key.mirrorRight());
 
             Wings wings = new Wings(left, right);
             CACHE.put(key, wings);
-            Elytra3D.LOGGER.info("Built 3D elytra mesh for {} (depth={}, topPivot={}, mirror={})",
-                    texture, key.depth(), key.topPivot(), key.mirrorRight());
+            Elytra3D.LOGGER.info("Built 3D elytra mesh for {} (depth={}, mirror={})",
+                    texture, key.depth(), key.mirrorRight());
             return wings;
         } catch (Exception e) {
             Elytra3D.LOGGER.error("Failed to build 3D elytra mesh for " + texture, e);

@@ -6,9 +6,8 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  * Client config, rendered automatically in the standard in-game screen
  * (Mods -> 3D Elytra -> Config).
  *
- * The offset/rotation values exist because the mesh's local origin has to be lined up by hand
- * with vanilla's wing ModelPart. The defaults are derived from vanilla's ElytraModel geometry,
- * but they're exposed so they can be nudged in-game rather than requiring a rebuild.
+ * Each wing has its own independent offset and rotation. The mirrored right wing doesn't
+ * simply sit opposite the left one, so sharing values between them can't line both up.
  */
 public final class Elytra3DConfig {
 
@@ -16,11 +15,36 @@ public final class Elytra3DConfig {
 
     public static final ModConfigSpec.BooleanValue ENABLED;
     public static final ModConfigSpec.IntValue DEPTH;
-    public static final ModConfigSpec.DoubleValue OFFSET_X;
-    public static final ModConfigSpec.DoubleValue OFFSET_Y;
-    public static final ModConfigSpec.DoubleValue OFFSET_Z;
     public static final ModConfigSpec.BooleanValue MIRROR_RIGHT;
-    public static final ModConfigSpec.BooleanValue TOP_PIVOT;
+
+    public static final Wing LEFT;
+    public static final Wing RIGHT;
+
+    /** Per-wing alignment values. */
+    public static final class Wing {
+        public final ModConfigSpec.DoubleValue offsetX;
+        public final ModConfigSpec.DoubleValue offsetY;
+        public final ModConfigSpec.DoubleValue offsetZ;
+        public final ModConfigSpec.DoubleValue rotateX;
+        public final ModConfigSpec.DoubleValue rotateY;
+        public final ModConfigSpec.DoubleValue rotateZ;
+
+        private Wing(ModConfigSpec.Builder builder, String name, double defaultX) {
+            builder.comment("Alignment for the " + name + " wing. Offsets are in pixels",
+                            "(1/16 block) and applied first; rotations are in degrees and",
+                            "applied after, spinning the mesh about that offset point.")
+                    .push(name);
+
+            offsetX = builder.defineInRange("offsetX", defaultX, -32.0D, 32.0D);
+            offsetY = builder.defineInRange("offsetY", 0.0D, -32.0D, 32.0D);
+            offsetZ = builder.defineInRange("offsetZ", 0.0D, -32.0D, 32.0D);
+            rotateX = builder.defineInRange("rotateX", 0.0D, -360.0D, 360.0D);
+            rotateY = builder.defineInRange("rotateY", 0.0D, -360.0D, 360.0D);
+            rotateZ = builder.defineInRange("rotateZ", 0.0D, -360.0D, 360.0D);
+
+            builder.pop();
+        }
+    }
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -35,34 +59,15 @@ public final class Elytra3DConfig {
                 .comment("Extrusion depth in pixels. Vanilla's elytra wing box is 2 deep.")
                 .defineInRange("depth", 2, 1, 8);
 
-        builder.pop();
-
-        builder.comment("Alignment of the 3D mesh against vanilla's wing model part.",
-                        "Units are pixels (1/16 block). Adjust if the wings sit in the wrong",
-                        "place or face the wrong way.")
-                .push("alignment");
-
-        OFFSET_X = builder
-                .comment("Sideways offset. Vanilla's left wing box starts at x=-10 from its part.")
-                .defineInRange("offsetX", -10.0D, -32.0D, 32.0D);
-
-        OFFSET_Y = builder
-                .comment("Vertical offset.")
-                .defineInRange("offsetY", 0.0D, -32.0D, 32.0D);
-
-        OFFSET_Z = builder
-                .comment("Depth offset (away from the player's back).")
-                .defineInRange("offsetZ", 0.0D, -32.0D, 32.0D);
-
         MIRROR_RIGHT = builder
                 .comment("Mirror the right wing, matching how vanilla draws it from the same UVs.")
                 .define("mirrorRightWing", true);
 
-        TOP_PIVOT = builder
-                .comment("Build the mesh pivoting from its top edge rather than its origin.",
-                        "Try flipping this if the wings are upside down.")
-                .define("topPivot", false);
+        builder.pop();
 
+        builder.comment("Per-wing alignment against vanilla's wing model parts.").push("alignment");
+        LEFT = new Wing(builder, "left", 0.0D);
+        RIGHT = new Wing(builder, "right", 0.0D);
         builder.pop();
 
         SPEC = builder.build();
