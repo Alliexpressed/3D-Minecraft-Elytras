@@ -2,13 +2,13 @@ package com.example.elytra3d.mixin;
 
 import com.example.elytra3d.Elytra3DConfig;
 import com.example.elytra3d.render.ElytraMeshCache;
+import com.example.elytra3d.render.ElytraWingRenderer;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.model.ElytraModel;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.layers.ElytraLayer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -22,11 +22,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces vanilla's flat elytra rendering with the 3D mesh version.
- *
- * Injects at HEAD and cancels the vanilla render when we successfully draw our own, so the
- * flat plane doesn't show through the solid model. Any failure path (config off, no mesh
- * built, unexpected texture) simply returns without cancelling, letting vanilla draw normally.
+ * Replaces vanilla's flat elytra rendering with the 3D mesh version, for an elytra worn in the
+ * vanilla chest slot.
  */
 @Mixin(ElytraLayer.class)
 public abstract class ElytraLayerMixin {
@@ -49,7 +46,6 @@ public abstract class ElytraLayerMixin {
 
         ItemStack chest = entity.getItemBySlot(EquipmentSlot.CHEST);
         if (!chest.is(Items.ELYTRA)) {
-            // Only the vanilla elytra for now - modded elytras keep vanilla rendering.
             return;
         }
 
@@ -59,23 +55,11 @@ public abstract class ElytraLayerMixin {
         }
 
         ElytraModelAccessor accessor = (ElytraModelAccessor) this.elytraModel;
-
-        poseStack.pushPose();
-        // Vanilla offsets the elytra slightly back from the body before rendering; match it.
-        poseStack.translate(0.0F, 0.0F, 0.125F);
-
         VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(ELYTRA_TEXTURE));
 
-        // The ModelPart overload takes a packed ARGB tint as its last argument; white with
-        // full alpha renders the texture untinted.
-        final int noTint = 0xFFFFFFFF;
-
-        wings.left().render(accessor.elytra3d$getLeftWing(), poseStack, consumer, light,
-                OverlayTexture.NO_OVERLAY, noTint);
-        wings.right().render(accessor.elytra3d$getRightWing(), poseStack, consumer, light,
-                OverlayTexture.NO_OVERLAY, noTint);
-
-        poseStack.popPose();
+        ElytraWingRenderer.render(wings,
+                accessor.elytra3d$getLeftWing(), accessor.elytra3d$getRightWing(),
+                poseStack, consumer, light);
 
         ci.cancel();
     }
