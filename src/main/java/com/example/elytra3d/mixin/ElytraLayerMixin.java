@@ -20,8 +20,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Replaces vanilla's flat elytra rendering with the 3D mesh version, for an elytra worn
- * in the vanilla chest slot.
+ * Handles 3D elytra rendering for the vanilla ElytraLayer (chest slot path).
+ *
+ * Two cases:
+ * 1. Elytra in the chest slot: draw the 3D mesh here and cancel vanilla's flat render.
+ * 2. Elytra in a Curios slot: ElytraSlotLayerMixin handles the real draw. Cancel here
+ *    unconditionally to suppress the duplicate flat render that vanilla still attempts.
+ *    Note: ElytraLayer reads the wing ModelParts before setupAnim has run for this entity's
+ *    current state, so we must NOT draw from here when the Curios layer will handle it.
  */
 @Mixin(ElytraLayer.class)
 public abstract class ElytraLayerMixin {
@@ -39,29 +45,25 @@ public abstract class ElytraLayerMixin {
             return;
         }
 
-        ResourceLocation texture = ElytraTextureResolver.resolve(entity);
-        if (texture == null) {
-            // No recognised elytra in the chest slot. If ElytraSlotLayer is also active (elytra
-            // in a Curios slot), it will handle rendering - cancel here so we don't get a
-            // duplicate vanilla flat render on top of what ElytraSlotLayerMixin draws.
-            if (ElytraTextureResolver.isElytraEquippedAnywhere(entity)) {
-                ci.cancel();
+        // If no recognised elytra is equipped anywhere, let vanilla handle it normally.
+        if (!ElytraTextureResolver.isElytraEquippedAnywhere(entity)) {
+            return;
+        }
+
+        ResourceLocation texture = ElytraTextureResolver.resolveChestSlotOnly(entity);
+        if (texture != null) {
+            // Elytra in the chest slot - draw the 3D mesh here.
+            ElytraMeshCache.Wings wings = ElytraMeshCache.getOrBuild(texture);
+            if (wings != null) {
+                ElytraModelAccessor accessor = (ElytraModelAccessor) this.elytraModel;
+                VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(texture));
+                ElytraWingRenderer.render(wings,
+                        accessor.elytra3d$getLeftWing(), accessor.elytra3d$getRightWing(),
+                        poseStack, consumer, light);
             }
-            return;
         }
-
-        ElytraMeshCache.Wings wings = ElytraMeshCache.getOrBuild(texture);
-        if (wings == null) {
-            return;
-        }
-
-        ElytraModelAccessor accessor = (ElytraModelAccessor) this.elytraModel;
-        VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(texture));
-
-        ElytraWingRenderer.render(wings,
-                accessor.elytra3d$getLeftWing(), accessor.elytra3d$getRightWing(),
-                poseStack, consumer, light);
-
+        // Whether chest slot or Curios slot, always cancel vanilla's flat render.
+        // For the Curios case, ElytraSlotLayerMixin draws the proper animated mesh.
         ci.cancel();
     }
 }

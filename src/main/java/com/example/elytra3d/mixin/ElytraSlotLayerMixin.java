@@ -20,16 +20,36 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 /**
- * Same replacement as ElytraLayerMixin, but for Elytra Slot's own render layer, used when
- * the elytra is worn in a Curios accessory slot.
+ * Replaces Elytra Slot's flat elytra render with the 3D mesh version.
+ *
+ * Elytra Slot registers ElytraSlotLayer for BOTH player model variants (default and slim),
+ * so this mixin would fire twice per frame per player without deduplication. A per-frame
+ * UUID set ensures only the first call draws; the second just cancels without drawing again.
+ * The set is cleared on each outer render() call so it resets every frame.
  */
 @Mixin(ElytraSlotLayer.class)
 public abstract class ElytraSlotLayerMixin {
 
+    /** Entities already rendered this frame - cleared at the start of each render() call. */
+    private static final Set<UUID> RENDERED_THIS_FRAME = new HashSet<>();
+
     @Shadow
     @Final
     private ElytraModel<LivingEntity> elytraModel;
+
+    /** Clear the dedup set at the start of each outer render() call. */
+    @Inject(method = "render", at = @At("HEAD"), remap = false)
+    private void elytra3d$clearDedup(PoseStack poseStack, MultiBufferSource buffer, int light,
+            LivingEntity entity, float limbSwing, float limbSwingAmount, float partialTicks,
+            float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
+        // Only clear for this entity, not globally, so other players render correctly.
+        RENDERED_THIS_FRAME.remove(entity.getUUID());
+    }
 
     @Inject(
             method = "lambda$render$0(Lnet/minecraft/world/entity/LivingEntity;Lcom/mojang/blaze3d/vertex/PoseStack;FFFFFLnet/minecraft/client/renderer/MultiBufferSource;ILcom/illusivesoulworks/elytraslot/client/ElytraRenderResult;)V",
@@ -55,6 +75,15 @@ public abstract class ElytraSlotLayerMixin {
 
         ResourceLocation texture = ElytraTextureResolver.resolve(entity);
         if (texture == null) {
+            return;
+        }
+
+        // Already rendered for this entity this frame (second model variant call) -
+        // cancel without drawing to suppress the duplicate.
+        boolean alreadyRendered = !RENDERED_THIS_FRAME.add(entity.getUUID());
+        if (alreadyRendered) {
+            poseStack.popPose();
+            ci.cancel();
             return;
         }
 
