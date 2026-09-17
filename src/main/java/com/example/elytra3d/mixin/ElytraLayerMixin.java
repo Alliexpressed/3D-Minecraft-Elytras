@@ -66,10 +66,14 @@ public abstract class ElytraLayerMixin {
 
         VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(ELYTRA_TEXTURE));
 
+        // The ModelPart overload takes a packed ARGB tint as its last argument; white with
+        // full alpha renders the texture untinted.
+        final int noTint = 0xFFFFFFFF;
+
         wings.left().render(accessor.elytra3d$getLeftWing(), poseStack, consumer, light,
-                OverlayTexture.NO_OVERLAY);
+                OverlayTexture.NO_OVERLAY, noTint);
         wings.right().render(accessor.elytra3d$getRightWing(), poseStack, consumer, light,
-                OverlayTexture.NO_OVERLAY);
+                OverlayTexture.NO_OVERLAY, noTint);
 
         poseStack.popPose();
 
