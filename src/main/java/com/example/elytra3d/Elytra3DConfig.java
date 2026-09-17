@@ -6,8 +6,10 @@ import net.neoforged.neoforge.common.ModConfigSpec;
  * Client config, rendered automatically in the standard in-game screen
  * (Mods -> 3D Elytra -> Config).
  *
- * Each wing has its own independent offset and rotation. The mirrored right wing doesn't
- * simply sit opposite the left one, so sharing values between them can't line both up.
+ * Wing offsets and rotations use plain define() with a validator rather than defineInRange()
+ * so NeoForge renders them as free text fields rather than sliders. Sliders produced by
+ * defineInRange() clamp to 0 and reject negative typed values, even when the lower bound
+ * is explicitly set negative.
  */
 public final class Elytra3DConfig {
 
@@ -22,25 +24,30 @@ public final class Elytra3DConfig {
 
     /** Per-wing alignment values. */
     public static final class Wing {
-        public final ModConfigSpec.DoubleValue offsetX;
-        public final ModConfigSpec.DoubleValue offsetY;
-        public final ModConfigSpec.DoubleValue offsetZ;
-        public final ModConfigSpec.DoubleValue rotateX;
-        public final ModConfigSpec.DoubleValue rotateY;
-        public final ModConfigSpec.DoubleValue rotateZ;
+        public final ModConfigSpec.ConfigValue<Double> offsetX;
+        public final ModConfigSpec.ConfigValue<Double> offsetY;
+        public final ModConfigSpec.ConfigValue<Double> offsetZ;
+        public final ModConfigSpec.ConfigValue<Double> rotateX;
+        public final ModConfigSpec.ConfigValue<Double> rotateY;
+        public final ModConfigSpec.ConfigValue<Double> rotateZ;
 
-        private Wing(ModConfigSpec.Builder builder, String name, double defaultX) {
+        private Wing(ModConfigSpec.Builder builder, String name, double defaultX, double defaultZ) {
             builder.comment("Alignment for the " + name + " wing. Offsets are in pixels",
-                            "(1/16 block) and applied first; rotations are in degrees and",
-                            "applied after, spinning the mesh about that offset point.")
+                            "(1/16 block); rotations in degrees.")
                     .push(name);
 
-            offsetX = builder.defineInRange("offsetX", defaultX, -32.0D, 32.0D);
-            offsetY = builder.defineInRange("offsetY", 0.0D, -32.0D, 32.0D);
-            offsetZ = builder.defineInRange("offsetZ", 0.0D, -32.0D, 32.0D);
-            rotateX = builder.defineInRange("rotateX", 0.0D, -360.0D, 360.0D);
-            rotateY = builder.defineInRange("rotateY", 0.0D, -360.0D, 360.0D);
-            rotateZ = builder.defineInRange("rotateZ", 0.0D, -360.0D, 360.0D);
+            offsetX = builder.comment("Sideways offset.")
+                    .define("offsetX", defaultX, v -> v instanceof Double d && d >= -32 && d <= 32);
+            offsetY = builder.comment("Vertical offset. Positive values move DOWN in Minecraft coordinates.")
+                    .define("offsetY", (double) 0, v -> v instanceof Double d && d >= -32 && d <= 32);
+            offsetZ = builder.comment("Depth offset. Positive values push wings further from the body.")
+                    .define("offsetZ", defaultZ, v -> v instanceof Double d && d >= -32 && d <= 32);
+            rotateX = builder.comment("Rotation around X axis in degrees.")
+                    .define("rotateX", (double) 0, v -> v instanceof Double d && d >= -360 && d <= 360);
+            rotateY = builder.comment("Rotation around Y axis in degrees.")
+                    .define("rotateY", (double) 0, v -> v instanceof Double d && d >= -360 && d <= 360);
+            rotateZ = builder.comment("Rotation around Z axis in degrees.")
+                    .define("rotateZ", (double) 0, v -> v instanceof Double d && d >= -360 && d <= 360);
 
             builder.pop();
         }
@@ -66,8 +73,8 @@ public final class Elytra3DConfig {
         builder.pop();
 
         builder.comment("Per-wing alignment against vanilla's wing model parts.").push("alignment");
-        LEFT = new Wing(builder, "left", 0.0D);
-        RIGHT = new Wing(builder, "right", 0.0D);
+        LEFT  = new Wing(builder, "left",  -3.0D, 4.4D);
+        RIGHT = new Wing(builder, "right",  3.0D, 4.4D);
         builder.pop();
 
         SPEC = builder.build();

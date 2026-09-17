@@ -19,8 +19,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Same replacement as ElytraLayerMixin, but for Elytra Slot's own render layer - used when the
- * elytra is worn in its Curios "back" slot, where vanilla's ElytraLayer never runs.
+ * Replaces Elytra Slot's flat elytra render with the 3D mesh version.
+ *
+ * Elytra Slot's render() delegates to a lambda (lambda$render$0) which calls setupAnim()
+ * before drawing. We must inject INSIDE that lambda, after setupAnim has posed the wings for
+ * this frame, otherwise we read last-frame or default T-pose and animations don't work.
+ *
+ * Targeting the lambda by name (remap=false) and injecting just before renderToBuffer gives
+ * us correctly-posed wing ModelParts to pass to our renderer.
  */
 @Mixin(ElytraSlotLayer.class)
 public abstract class ElytraSlotLayerMixin {
@@ -32,10 +38,19 @@ public abstract class ElytraSlotLayerMixin {
     @Final
     private ElytraModel<LivingEntity> elytraModel;
 
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true, remap = false)
-    private void elytra3d$renderElytraSlot(PoseStack poseStack, MultiBufferSource buffer, int light,
-            LivingEntity entity, float limbSwing, float limbSwingAmount, float partialTicks,
-            float ageInTicks, float netHeadYaw, float headPitch, CallbackInfo ci) {
+    @Inject(
+            method = "lambda$render$0",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/model/ElytraModel;renderToBuffer(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;III)V"
+            ),
+            cancellable = true,
+            remap = false
+    )
+    private void elytra3d$renderElytraSlot(LivingEntity entity, PoseStack poseStack,
+            float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks,
+            float netHeadYaw, MultiBufferSource buffer, int light,
+            Object elytraRenderResult, CallbackInfo ci) {
 
         if (!Elytra3DConfig.ENABLED.get()) {
             return;

@@ -40,9 +40,9 @@ public final class ElytraWingRenderer {
         // Offset first, in the part's own (unrotated) space, so the numbers stay intuitive.
         // Model units are 1/16 of a block.
         poseStack.translate(
-                cfg.offsetX.get().floatValue() / 16.0F,
-                cfg.offsetY.get().floatValue() / 16.0F,
-                cfg.offsetZ.get().floatValue() / 16.0F);
+                cfg.offsetX.get() / 16.0,
+                cfg.offsetY.get() / 16.0,
+                cfg.offsetZ.get() / 16.0);
 
         // Then rotation, spinning the mesh about that offset point.
         float rotX = cfg.rotateX.get().floatValue();
