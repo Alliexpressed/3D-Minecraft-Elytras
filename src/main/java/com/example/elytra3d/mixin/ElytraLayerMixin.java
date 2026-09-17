@@ -74,7 +74,10 @@ public abstract class ElytraLayerMixin {
                 ElytraModelAccessor accessor = (ElytraModelAccessor) this.elytraModel;
                 // Pose the wings for this frame. At @At("HEAD") setupAnim hasn't run yet,
                 // so we call it ourselves with the same args vanilla would use.
-                this.elytraModel.setupAnim(entity, limbSwing, limbSwingAmount,
+                // Cast through raw type to satisfy the wildcard capture.
+                @SuppressWarnings("unchecked")
+                ElytraModel<LivingEntity> model = (ElytraModel<LivingEntity>) (ElytraModel<?>) this.elytraModel;
+                model.setupAnim(entity, limbSwing, limbSwingAmount,
                         ageInTicks, netHeadYaw, headPitch);
                 VertexConsumer consumer = buffer.getBuffer(RenderType.armorCutoutNoCull(texture));
                 ElytraWingRenderer.render(wings,
