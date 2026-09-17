@@ -31,7 +31,7 @@ public final class Elytra3DConfig {
         public final ModConfigSpec.ConfigValue<Double> rotateY;
         public final ModConfigSpec.ConfigValue<Double> rotateZ;
 
-        private Wing(ModConfigSpec.Builder builder, String name, double defaultX, double defaultZ) {
+        private Wing(ModConfigSpec.Builder builder, String name, double defaultX, double defaultY, double defaultZ) {
             builder.comment("Alignment for the " + name + " wing. Offsets are in pixels",
                             "(1/16 block); rotations in degrees.")
                     .push(name);
@@ -39,7 +39,7 @@ public final class Elytra3DConfig {
             offsetX = builder.comment("Sideways offset.")
                     .define("offsetX", defaultX, v -> v instanceof Double d && d >= -32 && d <= 32);
             offsetY = builder.comment("Vertical offset. Positive values move DOWN in Minecraft coordinates.")
-                    .define("offsetY", (double) 0, v -> v instanceof Double d && d >= -32 && d <= 32);
+                    .define("offsetY", defaultY, v -> v instanceof Double d && d >= -32 && d <= 32);
             offsetZ = builder.comment("Depth offset. Positive values push wings further from the body.")
                     .define("offsetZ", defaultZ, v -> v instanceof Double d && d >= -32 && d <= 32);
             rotateX = builder.comment("Rotation around X axis in degrees.")
@@ -73,8 +73,8 @@ public final class Elytra3DConfig {
         builder.pop();
 
         builder.comment("Per-wing alignment against vanilla's wing model parts.").push("alignment");
-        LEFT  = new Wing(builder, "left",  -3.0D, 4.4D);
-        RIGHT = new Wing(builder, "right",  3.0D, 4.4D);
+        LEFT  = new Wing(builder, "left",  -3.0D, -1.0D, 2.0D);
+        RIGHT = new Wing(builder, "right",  3.0D, -1.0D, 2.0D);
         builder.pop();
 
         SPEC = builder.build();
