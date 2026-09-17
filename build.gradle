@@ -47,6 +47,11 @@ dependencies {
     // 3D Skin Layers: compileOnly - we compile against its public API but never bundle it.
     // It's declared as a required dependency in neoforge.mods.toml instead.
     compileOnly files("libs/${skinlayers_jar_name}")
+
+    // Elytra Slot: compileOnly, so the optional ElytraSlotLayerMixin can compile against its
+    // render layer class. Not bundled; the mixin config is optional and simply doesn't apply
+    // when Elytra Slot isn't installed.
+    compileOnly files("libs/${elytraslot_jar_name}")
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

@@ -5,6 +5,9 @@ license = "${mod_license}"
 [[mixins]]
 config = "elytra3d.mixins.json"
 
+[[mixins]]
+config = "elytra3d.elytraslot.mixins.json"
+
 [[mods]]
 modId = "${mod_id}"
 version = "${mod_version}"
@@ -32,5 +35,14 @@ side = "CLIENT"
 modId = "skinlayers3d"
 type = "required"
 versionRange = "[1.11.0,)"
+ordering = "AFTER"
+side = "CLIENT"
+
+# Optional - if present, curios-slot elytras get the 3D treatment too (see
+# ElytraSlotLayerMixin). Must load first so its render layer class exists to patch.
+[[dependencies.${mod_id}]]
+modId = "elytraslot"
+type = "optional"
+versionRange = "[9.0.0,)"
 ordering = "AFTER"
 side = "CLIENT"
