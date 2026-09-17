@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.example.elytra3d.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ElytraLayerMixin",
+    "ElytraModelAccessor"
+  ],
+  "injectors": { "defaultRequire": 1 }
+}
